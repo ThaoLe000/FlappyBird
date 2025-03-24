@@ -6,104 +6,126 @@ using UnityEngine.UI;
 public class GameController : MonoBehaviour
 {
     public bool isEndGame;
-    bool isStartFirstTime = true;
-    int gamePoint = 0;
-
+    public int gamePoint;
+    [SerializeField] private Text yourScore;
+    [SerializeField] private Text highScore;
+    bool firsted;
     public GameObject pnlEndGame;
     public GameObject pnlPauseGame;
     public GameObject pnlMenuGame;
 
-    public Sprite[] numberSprites; 
-    public Image[] scoreImages; 
+    public Sprite[] numberSprites;
+    public Image[] scoreImages;
+
+
 
 
     void Start()
     {
+        gamePoint = 0;
         Time.timeScale = 0;
         isEndGame = false;
-        isStartFirstTime = true;
+        firsted = true;
         pnlEndGame.SetActive(false);
         pnlMenuGame.SetActive(true);
-        UpdateScoreDisplay(0); 
+        UpdateScoreDisplay(0);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (isEndGame)
+        if (Input.GetKeyDown(KeyCode.Space) && pnlPauseGame.activeSelf == false && firsted == true)
         {
-            if (Input.GetKeyDown(KeyCode.Space) && isStartFirstTime)
-            {
-                StartGame();
-            }
+            Time.timeScale = 1;
+            firsted = false;
         }
-        else
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                Time.timeScale = 1;
-            }
+            PauseGame();
+        }
+        else if (Input.GetKeyDown(KeyCode.Escape) && pnlPauseGame.activeSelf == true)
+        {
+            ResumeGame();
         }
     }
 
     public void GetPoint()
     {
         gamePoint++;
-        UpdateScoreDisplay(gamePoint); 
+        UpdateScoreDisplay(gamePoint);
     }
-
-    void StartGame()
-    {
-        SceneManager.LoadScene(1);
-    }
-
     public void Restart()
     {
-        StartGame();
+        SoundManager.instance.ClickButton();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+    public void MenuGame()
+    {
+        SoundManager.instance.ClickButton();
+        SceneManager.LoadScene(0);
+    }
+
 
     public void PauseGame()
     {
+        SoundManager.instance.ClickButton();
         Time.timeScale = 0;
         pnlPauseGame.SetActive(true);
+        pnlMenuGame.SetActive(false);
 
     }
     public void ResumeGame()
     {
+        SoundManager.instance.ClickButton();
         pnlPauseGame.SetActive(false);
         Time.timeScale = 1;
+        pnlMenuGame.SetActive(true);
     }
 
     public void EndGame()
     {
         isEndGame = true;
-        isStartFirstTime = false;
         Time.timeScale = 0;
         pnlMenuGame.SetActive(false);
         pnlEndGame.SetActive(true);
+        ShowHighScore();
+
+
     }
-    void UpdateScoreDisplay(int score)
+    private void ShowHighScore()
     {
-        string scoreStr = score.ToString().PadLeft(3, '0');
+        int _highScore = PlayerPrefs.GetInt("HighScore", 0);
+        if (gamePoint > _highScore)
+        {
+            PlayerPrefs.SetInt("HighScore", gamePoint);
+            _highScore = PlayerPrefs.GetInt("HighScore", 0);
+        }
+        yourScore.text = gamePoint.ToString();
+        highScore.text = _highScore.ToString();
+    }
+    private void UpdateScoreDisplay(int score)
+    {
+        string scoreStr = score.ToString();
+        int length = scoreStr.Length;
+
+        // Thêm khoảng cách giữa các số (tăng giá trị này nếu cần)
+        float spacing = 80f;
+
+        // Căn giữa tổng thể các số, bao gồm cả khoảng cách
+        float totalWidth = length * scoreImages[0].rectTransform.sizeDelta.x + (length - 1) * spacing;
+        float startX = -totalWidth / 2f;
 
         for (int i = 0; i < scoreImages.Length; i++)
         {
-            int digit = int.Parse(scoreStr[i].ToString());
+            if (i < length)
+            {
+                int digit = int.Parse(scoreStr[i].ToString());
+                scoreImages[i].enabled = true;
+                scoreImages[i].sprite = numberSprites[digit];
 
-            if (i == 2)
-            {
-                scoreImages[i].enabled = true;
-                scoreImages[i].sprite = numberSprites[digit];
-            }
-            else if (i == 1 && score >= 10)
-            {
-                scoreImages[i].enabled = true;
-                scoreImages[i].sprite = numberSprites[digit];
-            }
-            else if (i == 0 && score >= 100)
-            {
-                scoreImages[i].enabled = true;
-                scoreImages[i].sprite = numberSprites[digit];
+                // Cập nhật vị trí để căn giữa và tách xa nhau
+                float posX = startX + i * (scoreImages[i].rectTransform.sizeDelta.x + spacing);
+                scoreImages[i].rectTransform.anchoredPosition = new Vector2(posX, 0);
             }
             else
             {
@@ -112,5 +134,10 @@ public class GameController : MonoBehaviour
         }
     }
 
-
+    public void UIUpdate(Text text)
+    {
+        int number = PlayerPrefs.GetInt(text.name, 0);
+        Debug.Log("Giá trị lấy từ PlayerPrefs: " + number);
+        text.text = number.ToString();
+    }
 }

@@ -4,23 +4,36 @@ using UnityEngine;
 
 public class SpawnWall : MonoBehaviour
 {
-    public GameObject wallPrefab; 
-    public float minY = -7f;      
-    public float maxY = -3f;       
-    public float spawnInterval = 3f; 
+    [SerializeField] private float spawnX ;
+    [SerializeField] private float minY;      
+    [SerializeField] private float maxY;       
+    [SerializeField] private float spawnInterval;
+    [SerializeField] private float spawnItem;
+    private ObjectPool objectPool;
+    [SerializeField] private GameObject[] itemPrefabs;
+    
+
+    private void Awake()
+    {
+        objectPool = GetComponent<ObjectPool>();
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        InvokeRepeating(nameof(WallSpawn), 0, spawnInterval);
+        InvokeRepeating(nameof(WallSpawn), 0f, spawnInterval);
+        InvokeRepeating(nameof(ItemSpawn), 5f, spawnItem);
     }
 
     void WallSpawn()
     {
         float randomY = Random.Range(minY, maxY);
-
-        Vector3 spawnPosition = new Vector3(15, randomY, 0); 
-        GameObject newWall = Instantiate(wallPrefab, spawnPosition, Quaternion.identity);
-        Destroy(newWall, 15f);
+        Vector2 spawnPosition = new Vector2(spawnX, randomY);
+        objectPool.GetWallPrefab(spawnPosition);
+    }
+    void ItemSpawn()
+    {
+        int randomIndex = Random.Range(0, itemPrefabs.Length);
+        Instantiate(itemPrefabs[randomIndex], transform.position, Quaternion.identity );
     }
 }

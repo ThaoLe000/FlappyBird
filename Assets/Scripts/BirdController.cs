@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class BirdController : MonoBehaviour
 {
-    public float flyPower = 5f;
-    public AudioClip flyClip;
-    public AudioClip deathClip;
-    public AudioClip gameOverClip;
+    [SerializeField] private float flyPower;
+    [SerializeField] private AudioClip flyClip;
+    [SerializeField] AudioClip deathClip;
+    [SerializeField] AudioClip gameOverClip;
+    [SerializeField] AudioClip pointClip;
     private AudioSource audioSource;
-
+    private Rigidbody2D rb;
     private Animator animator;
 
     GameObject obj;
@@ -18,11 +19,10 @@ public class BirdController : MonoBehaviour
     void Start()
     {
         obj = gameObject;
-        audioSource = obj.GetComponent<AudioSource>();
-        audioSource.clip = flyClip;
         animator = obj.GetComponent<Animator>();
         animator.SetFloat("flyPower", 0);
         animator.SetBool("isDead", false);
+        rb = obj.GetComponent<Rigidbody2D>();
 
         if(gameController == null)
         {
@@ -37,8 +37,8 @@ public class BirdController : MonoBehaviour
         {
             if (!gameController.GetComponent<GameController>().isEndGame)
             {
-                audioSource.Play();
-                obj.GetComponent<Rigidbody2D>().velocity = Vector2.up * flyPower;
+                SoundManager.instance.PlaySound(flyClip);
+                rb.velocity = Vector2.up * flyPower;
             }
         }
         animator.SetFloat("flyPower", obj.GetComponent<Rigidbody2D>().velocity.y);
@@ -46,27 +46,32 @@ public class BirdController : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        EndGame();
+        if(collision.gameObject.tag == "BlockWall") return;
+        if (collision.gameObject.tag == "Wall")
+        {
+            EndGame();
+        }
     }
 
     void OnTriggerEnter2D(Collider2D collision)
     {
-        gameController.GetComponent<GameController>().GetPoint();    
+        if (collision.tag == "Point")
+        {
+            gameController.GetComponent<GameController>().GetPoint();
+            SoundManager.instance.PlaySound(pointClip);
+        }
     }
 
     void EndGame()
     {   
         animator.SetBool("isDead", true);
-        audioSource.clip = deathClip;
-        audioSource.Play();
-
+        SoundManager.instance.PlaySound(deathClip);
         Invoke(nameof(PlayGameOverSound), 1f);
         gameController.GetComponent<GameController>().EndGame();
     }
 
     void PlayGameOverSound()
     {
-        audioSource.clip = gameOverClip;
-        audioSource.Play();
+        SoundManager.instance.PlaySound(gameOverClip);
     }
 }
